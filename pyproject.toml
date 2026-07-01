@@ -7,7 +7,7 @@ name = "geolens"
 version = "0.1.0"
 description = "GeoLens - retrieval-first visual geo-localization with explainability (MSLS Amsterdam MVP)."
 readme = "README.md"
-requires-python = ">=3.11"
+requires-python = ">=3.11,<3.13"
 license = { text = "MIT" }
 
 # Runtime dependencies. Heavy ML libs (torch/faiss/gradio) are declared here
