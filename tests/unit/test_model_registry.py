@@ -5,7 +5,7 @@ def test_defaults():
     m = default_manifest()
     assert m.model_name == "dinov2_salad"
     assert m.embedding_dim == 8448
-    assert m.image_size == 224
+    assert m.image_size == 322
 
 
 def test_json_roundtrip(tmp_path):

@@ -39,7 +39,7 @@ def service() -> EmbeddingService:
 
 def test_preprocess_shape(service):
     tensor = service.preprocess(_synthetic_image())
-    assert tuple(tensor.shape) == (3, 224, 224)
+    assert tuple(tensor.shape) == (3, 322, 322)
     assert tensor.dtype == torch.float32
 
 

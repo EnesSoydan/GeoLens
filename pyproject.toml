@@ -24,6 +24,10 @@ dependencies = [
     "torch>=2.2",
     "torchvision>=0.17",
     "faiss-cpu>=1.8",
+    # Required by the serizba/salad hub model: VPRModel subclasses LightningModule
+    # and its __init__ instantiates a metric-learning loss even for inference.
+    "pytorch-lightning>=2.2",
+    "pytorch-metric-learning>=2.3",
     "huggingface-hub>=0.23",
     "gradio>=4.36",
     "folium>=0.17",

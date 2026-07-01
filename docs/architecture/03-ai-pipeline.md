@@ -6,8 +6,9 @@
 ```mermaid
 flowchart TD
     A[Görüntü yükleme<br/>multipart/form-data] --> B[Doğrulama<br/>MIME + boyut + EXIF sıyır]
-    B --> C[Preprocessing<br/>resize 224x224 + ImageNet normalize]
+    B --> C[Preprocessing<br/>resize 322x322 + ImageNet normalize]
     C --> D[Embedding<br/>DINOv2 ViT-B/14 + SALAD → 8448-dim, fp16]
+    %% Not: 322x322 zorunlu - bkz. çözünürlük notu
     D --> E[L2 normalize]
     E --> F[FAISS arama<br/>IndexFlatIP top-K]
     F --> G[ID eşleme<br/>faiss_id → SQLite metadata]
@@ -18,6 +19,13 @@ flowchart TD
     J --> K
     K --> L[JSON response]
 ```
+
+> **Çözünürlük notu (322x322 zorunlu):** Resmi SALAD reposu (github.com/serizba/salad)
+> eval script'i **322x322** kullanır ve MSLS-val R@1 %92.2 bu çözünürlükte alınmıştır.
+> DINOv2 patch boyutu 14 → 322² **529 patch**, 224² yalnız 256 patch üretir; SALAD'ın
+> 64-cluster optimal-transport aggregation'ı 529-patch dağılımıyla kalibre edilmiştir.
+> Bu nedenle 224² sadece hafif doğruluk kaybı değil, **kalibrasyon uyumsuzluğu** yaratır.
+> (Önceki 224² kararı düzeltildi.)
 
 ## Sequence (katmanlar arası)
 ```mermaid
@@ -54,7 +62,7 @@ sequenceDiagram
 flowchart TD
     A[MSLS Amsterdam indir<br/>scripts/download_msls] --> B[Doğrula/filtrele<br/>bozuk + eksik GPS ele]
     B --> C{image_role?}
-    C -->|database| D[Preprocess 224x224 normalize]
+    C -->|database| D[Preprocess 322x322 normalize]
     C -->|query| Q[INDEX'E GİRMEZ<br/>yalnız SQLite role=query<br/>Recall@N için ayrılır]
     D --> E[Batch embedding<br/>DINOv2+SALAD, fp16, checkpoint]
     E --> F[L2 normalize]
@@ -80,7 +88,7 @@ flowchart TD
 | **Tek global paylaşılan Semaphore(1) + run_in_executor** | ✓ Sistem genelinde tek GPU işlemi, loop duyarlı, Redis yok |
 | Celery+Redis | v2; MVP overkill |
 
-**Öneri:** `app.state` içinde **tek global `gpu_semaphore = asyncio.Semaphore(1)`**; DI ile hem EmbeddingService hem XAIService'e **aynı örnek** enjekte edilir. Her GPU çağrısı bu semaphore'u alır → herhangi bir anda yalnızca bir GPU işlemi (embed *veya* eigen_cam) çalışır; iki eşzamanlı isteğin çakışması engellenir. `run_in_executor` (tek-thread pool) ile event loop duyarlı kalır. fp16 + 224² → 8GB VRAM içinde (risk #20/#21).
+**Öneri:** `app.state` içinde **tek global `gpu_semaphore = asyncio.Semaphore(1)`**; DI ile hem EmbeddingService hem XAIService'e **aynı örnek** enjekte edilir. Her GPU çağrısı bu semaphore'u alır → herhangi bir anda yalnızca bir GPU işlemi (embed *veya* eigen_cam) çalışır; iki eşzamanlı isteğin çakışması engellenir. `run_in_executor` (tek-thread pool) ile event loop duyarlı kalır. fp16 + 322² (küçük batch ayarıyla) → 8GB VRAM içinde (risk #20/#21).
 
 > **Kritik:** Servis başına ayrı semaphore, "tek-worker serileştirme" hedefini kırar (embed ve eigen_cam paralel çalışıp OOM). Bu nedenle tek paylaşılan örnek zorunludur.
 

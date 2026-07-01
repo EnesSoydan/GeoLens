@@ -26,7 +26,7 @@ class EmbeddingService:
         model: nn.Module,
         device: str | torch.device = "cpu",
         dtype: torch.dtype = torch.float32,
-        image_size: int = 224,
+        image_size: int = 322,
     ) -> None:
         """Wrap a VPR ``model`` with its preprocessing transform."""
         self._model = model
@@ -46,7 +46,7 @@ class EmbeddingService:
         pretrained: bool = True,
         device: str | torch.device = "cpu",
         dtype: torch.dtype = torch.float32,
-        image_size: int = 224,
+        image_size: int = 322,
     ) -> EmbeddingService:
         """Load the pretrained VPR model and wrap it in a service."""
         # Lazy import keeps the torch.hub download out of module import time.

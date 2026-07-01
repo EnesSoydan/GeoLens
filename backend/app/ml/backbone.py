@@ -33,8 +33,13 @@ def load_vpr_model(
     Returns:
         The VPR model on ``device`` in eval mode.
     """
+    # ``trust_repo=True`` skips the interactive trust prompt for the third-party
+    # SALAD repo (required in non-interactive / server contexts).
     model: nn.Module = torch.hub.load(
-        DINOV2_SALAD_HUB, DINOV2_SALAD_ENTRYPOINT, pretrained=pretrained
+        DINOV2_SALAD_HUB,
+        DINOV2_SALAD_ENTRYPOINT,
+        pretrained=pretrained,
+        trust_repo=True,
     )
     model = model.to(device=device, dtype=dtype)
     model.eval()

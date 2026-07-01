@@ -38,7 +38,7 @@ class ModelManifest:
     model_name: str = "dinov2_salad"
     hub_source: str = "serizba/salad"
     embedding_dim: int = DESCRIPTOR_DIM
-    image_size: int = 224
+    image_size: int = 322  # Official SALAD eval resolution (see 03-ai-pipeline.md).
     mean: tuple[float, ...] = IMAGENET_MEAN
     std: tuple[float, ...] = IMAGENET_STD
     dataset: str = "msls_amsterdam"
