@@ -68,5 +68,18 @@ uvicorn app.main:app --reload --app-dir backend
 - **MVP (S0–S5):** Amsterdam, DINOv2+SALAD, FAISS Flat, Eigen-CAM, Gradio.
 - **v2 (out of scope):** multi-city, Next.js, PostGIS, Qdrant, VLM rationale.
 
+## Dependencies & Licensing
+- **Project code:** MIT (see [LICENSE](LICENSE)).
+- **Dataset:** MSLS under CC-BY-SA (Mapillary terms).
+- **Model:** the DINOv2 + SALAD descriptor is loaded at runtime via `torch.hub`
+  from [`serizba/salad`](https://github.com/serizba/salad), which is licensed
+  **GPL-3.0**. SALAD is therefore a runtime dependency of GeoLens (fetched via
+  the hub), and it is executed by the served application — including the public
+  Hugging Face Spaces demo planned in the deployment design. GeoLens keeps its
+  own source under MIT and does not vendor SALAD's code, but the running/served
+  application incorporates GPL-3.0 code. For commercial or official use, consult
+  legal counsel to confirm exact license compliance.
+
 ## License
-[MIT](LICENSE). Dataset under its own CC-BY-SA terms.
+[MIT](LICENSE) for GeoLens's own code. Third-party components retain their own
+licenses — see [Dependencies & Licensing](#dependencies--licensing).
