@@ -3,6 +3,8 @@
 
 > Araştırma-only çıktı. Kod/uygulama dosyası üretilmemiştir.
 
+> **⚠️ ERRATA (2026-07):** Aşağıda "Amsterdam" geçen kapsam/risk satırları hedef şehir olarak resmi MSLS-val = **cph+sf** (Kopenhag + San Francisco) şeklinde okunmalıdır. Amsterdam bir TRAIN şehridir; ayrıntı ve gerekçe için `faz-b.md` errata'sına bakınız.
+
 ---
 
 ## Bölüm 8 — Teknik Riskler ve Çözümleri (35 risk)

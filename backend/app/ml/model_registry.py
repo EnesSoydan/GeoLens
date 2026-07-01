@@ -41,7 +41,7 @@ class ModelManifest:
     image_size: int = 322  # Official SALAD eval resolution (see 03-ai-pipeline.md).
     mean: tuple[float, ...] = IMAGENET_MEAN
     std: tuple[float, ...] = IMAGENET_STD
-    dataset: str = "msls_amsterdam"
+    dataset: str = "msls_val_cph_sf"
     index_size: int = 0
     weights_sha256: str | None = None
 

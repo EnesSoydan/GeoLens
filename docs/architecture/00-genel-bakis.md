@@ -7,14 +7,14 @@
 ## Proje Özeti (Araştırma Fazı Kararları)
 - **Ad:** GeoLens (GeoReasoner akademik makaleyle çakıştığından değişti)
 - **Problem tipi:** Retrieval-first (görüntü → embedding → FAISS kNN → konum)
-- **Veri:** MSLS Amsterdam — **resmi mapillary_sls MSLS-val protokolü** (~18.9k database + 740 sorgu, Amsterdam+Manila toplam; MVP Amsterdam alt-kümesini kullanır). CC-BY-SA, açık GT. ('~11k sorgu' gayri-resmi downloader versiyonuydu; bkz. 08-degerlendirme.md)
+- **Veri:** Resmi MSLS **validation** split = **cph + sf** (Kopenhag + San Francisco) — **resmi mapillary_sls MSLS-val protokolü** (~18.9k database + 740 sorgu). MVP **tam resmi val**'i kullanır (alt-küme yok). CC-BY-SA, açık GT. (DÜZELTME 2026-07: önceki "Amsterdam+Manila = val" faktüel hataydı; `default_cities['val']==['cph','sf']`, Amsterdam TRAIN şehri. Sayılar doğruydu, şehir adları yanlıştı. bkz. 08-degerlendirme.md)
 - **Model:** DINOv2 ViT-B/14 + SALAD agregasyon (8448-dim)
-- **Index:** FAISS Flat (~0.64GB üst sınır; Amsterdam database alt-kümesi daha küçük)
+- **Index:** FAISS Flat (~0.64GB; resmi val database ~18.9k vektör × 33KB)
 - **XAI:** Eigen-CAM / attention rollout (gradyansız); VLM → v2
 - **Stack:** FastAPI + Gradio (MVP) → Next.js (v2) + Leaflet + SQLite + PyTorch + Docker + HF Spaces
 - **Donanım:** RTX 4060 8GB VRAM, 64GB RAM
-- **Kapsam disiplini:** MVP yalnız Amsterdam; çok-şehir/real-time/VLM → v2
-- **Değerlendirme:** Recall@1/5/10 + medyan km-hata (MSLS Amsterdam val)
+- **Kapsam disiplini:** MVP yalnız resmi MSLS-val (cph+sf); ek şehir/real-time/VLM → v2
+- **Değerlendirme:** Recall@1/5/10 + medyan km-hata (resmi MSLS-val cph+sf)
 
 ## Mimari Tasarımın Alt-Faz Haritası
 10 başlık, mantıksal bağımlılığa göre 4 alt-faza gruplandı. Her alt-faz: analiz → alternatif karşılaştırma → gerekçeli karar → dosya + özet.

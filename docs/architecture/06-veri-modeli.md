@@ -3,7 +3,7 @@
 > Plan/dokümantasyon. Gerçek şema DDL/kodu değil — tasarım taslağı.
 
 ## Tablolar
-- **reference_images** — tüm MSLS Amsterdam görüntü metadata'sı. **`image_role`** ile `database` (referans/harita) veya `query` (sorgu) ayrılır. **Yalnızca `image_role='database'` satırları FAISS index'ine yazılır**; `query` satırları index'e girmez, `evaluate.py` (Recall@N) için tutulur.
+- **reference_images** — tüm MSLS-val (cph+sf) görüntü metadata'sı. **`image_role`** ile `database` (referans/harita) veya `query` (sorgu) ayrılır. **Yalnızca `image_role='database'` satırları FAISS index'ine yazılır**; `query` satırları index'e girmez, `evaluate.py` (Recall@N) için tutulur.
 - **query_logs** — (opsiyonel) canlı kullanıcı tahmini analitiği; **yüklenen görüntü SAKLANMAZ** (GDPR risk #35). (MSLS `query` görüntüleriyle karıştırılmamalı.)
 - **Manifest** — JSON sidecar (`model_registry`), ana kaynak; `/model-info` okur (`index_size` = database görüntü sayısı).
 

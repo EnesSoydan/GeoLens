@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "geolens"
 version = "0.1.0"
-description = "GeoLens - retrieval-first visual geo-localization with explainability (MSLS Amsterdam MVP)."
+description = "GeoLens - retrieval-first visual geo-localization with explainability (MSLS-val Copenhagen + San Francisco MVP)."
 readme = "README.md"
 requires-python = ">=3.11,<3.13"
 license = { text = "MIT" }

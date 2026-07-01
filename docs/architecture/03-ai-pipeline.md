@@ -60,7 +60,7 @@ sequenceDiagram
 ## Offline Pipeline (referans DB → FAISS)
 ```mermaid
 flowchart TD
-    A[MSLS Amsterdam indir<br/>scripts/download_msls] --> B[Doğrula/filtrele<br/>bozuk + eksik GPS ele]
+    A[MSLS-val cph+sf indir<br/>scripts/download_msls] --> B[Doğrula/filtrele<br/>bozuk + eksik GPS ele]
     B --> C{image_role?}
     C -->|database| D[Preprocess 322x322 normalize]
     C -->|query| Q[INDEX'E GİRMEZ<br/>yalnız SQLite role=query<br/>Recall@N için ayrılır]
