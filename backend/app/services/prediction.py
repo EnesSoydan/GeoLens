@@ -5,23 +5,27 @@ Pure, synchronous business logic. The route layer owns concurrency concerns
 turns a query image into a ``PredictionResponse`` by chaining the embedding,
 retrieval and metadata components.
 
-XAI (Eigen-CAM heatmaps) is *not* produced here: it arrives in Sprint S3. Until
-then every response reports ``heatmap_png_base64=None`` and
-``heatmap_status="disabled"`` — an honest signal that the overlay capability is
-not yet wired, independent of the ``include_heatmap`` request flag.
+The Eigen-CAM overlay is produced by the optional ``xai`` component, gated by the
+API contract: only when the caller requested it *and* the top-1 match is
+confident (``resolve_heatmap_status``). When no ``xai`` is injected the service
+degrades to ``heatmap_status="disabled"`` with a ``None`` overlay.
 """
 
 from __future__ import annotations
 
 import time
 import uuid
+from typing import TYPE_CHECKING
 
 from PIL import Image
 
 from app.repositories.metadata_repo import MetadataLookup
 from app.schemas.prediction import GeoPoint, PredictionItem, PredictionResponse
 from app.services.embedding import EmbeddingService
-from app.services.retrieval import RetrievalService
+from app.services.retrieval import RetrievalService, resolve_heatmap_status
+
+if TYPE_CHECKING:
+    from app.services.xai import HeatmapGenerator
 
 
 class PredictionService:
@@ -33,12 +37,14 @@ class PredictionService:
         retrieval: RetrievalService,
         metadata: MetadataLookup,
         model_version: str,
+        xai: HeatmapGenerator | None = None,
     ) -> None:
         """Wire the pipeline components and record the model version string."""
         self._embedding = embedding
         self._retrieval = retrieval
         self._metadata = metadata
         self._model_version = model_version
+        self._xai = xai
 
     def predict(
         self,
@@ -82,6 +88,14 @@ class PredictionService:
         top = items[0]
         confidence = top.similarity
         is_confident = self._retrieval.is_confident(confidence)
+
+        # No overlay capability without an injected XAI component -> "disabled".
+        effective_include = include_heatmap and self._xai is not None
+        heatmap_status = resolve_heatmap_status(effective_include, is_confident)
+        heatmap_png_base64: str | None = None
+        if heatmap_status == "included" and self._xai is not None:
+            heatmap_png_base64 = self._xai.heatmap_png_base64(image)
+
         processing_ms = int((time.perf_counter() - started) * 1000)
 
         return PredictionResponse(
@@ -90,8 +104,8 @@ class PredictionService:
             predictions=items,
             confidence=confidence,
             is_confident=is_confident,
-            heatmap_png_base64=None,
-            heatmap_status="disabled",
+            heatmap_png_base64=heatmap_png_base64,
+            heatmap_status=heatmap_status,
             model_version=self._model_version,
             processing_ms=processing_ms,
         )

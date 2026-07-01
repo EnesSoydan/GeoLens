@@ -31,7 +31,18 @@ class _FakeEmbedding:
         return self._descriptor
 
 
-def _build_service(query_index: int, threshold: float) -> PredictionService:
+class _FakeXAI:
+    """Heatmap stub that records whether it was invoked."""
+
+    def __init__(self) -> None:
+        self.calls = 0
+
+    def heatmap_png_base64(self, image: Image.Image) -> str:
+        self.calls += 1
+        return "FAKE_BASE64_PNG"
+
+
+def _build_service(query_index: int, threshold: float, xai=None) -> PredictionService:
     rng = np.random.default_rng(7)
     raw = rng.standard_normal((_N, DESCRIPTOR_DIM)).astype(np.float32)
     vectors = np.ascontiguousarray(
@@ -53,7 +64,7 @@ def _build_service(query_index: int, threshold: float) -> PredictionService:
     ]
     metadata = InMemoryMetadataRepo(rows)
     embedding = _FakeEmbedding(vectors[query_index])
-    return PredictionService(embedding, retrieval, metadata, model_version="test-v0")
+    return PredictionService(embedding, retrieval, metadata, "test-v0", xai=xai)
 
 
 def test_predict_assembles_ranked_response():
@@ -84,8 +95,35 @@ def test_predict_low_confidence_still_returns_best():
     assert len(resp.predictions) == 1
 
 
-def test_predict_heatmap_disabled_in_s2():
+def test_predict_heatmap_disabled_without_xai():
     service = _build_service(query_index=1, threshold=0.5)
     resp = service.predict(Image.new("RGB", (8, 8)), top_k=2, include_heatmap=True)
     assert resp.heatmap_png_base64 is None
     assert resp.heatmap_status == "disabled"
+
+
+def test_predict_heatmap_included_when_confident_and_requested():
+    xai = _FakeXAI()
+    service = _build_service(query_index=0, threshold=0.5, xai=xai)
+    resp = service.predict(Image.new("RGB", (8, 8)), top_k=1, include_heatmap=True)
+    assert resp.heatmap_status == "included"
+    assert resp.heatmap_png_base64 == "FAKE_BASE64_PNG"
+    assert xai.calls == 1
+
+
+def test_predict_heatmap_skipped_when_low_confidence():
+    xai = _FakeXAI()
+    service = _build_service(query_index=0, threshold=1.5, xai=xai)
+    resp = service.predict(Image.new("RGB", (8, 8)), top_k=1, include_heatmap=True)
+    assert resp.heatmap_status == "skipped_low_confidence"
+    assert resp.heatmap_png_base64 is None
+    assert xai.calls == 0
+
+
+def test_predict_heatmap_disabled_when_not_requested():
+    xai = _FakeXAI()
+    service = _build_service(query_index=0, threshold=0.5, xai=xai)
+    resp = service.predict(Image.new("RGB", (8, 8)), top_k=1, include_heatmap=False)
+    assert resp.heatmap_status == "disabled"
+    assert resp.heatmap_png_base64 is None
+    assert xai.calls == 0
