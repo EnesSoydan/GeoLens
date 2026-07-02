@@ -113,8 +113,16 @@ class XAIService:
         return mask
 
     def heatmap_png_base64(self, image: Image.Image) -> str:
-        """Overlay the Eigen-CAM saliency on the resized query and PNG-encode it."""
+        """Return a jet-colormap Eigen-CAM overlay on the query as a base64 PNG.
+
+        The saliency is rendered as a JET heatmap and alpha-blended *over the
+        original query image* (not a bare saliency map), matching the API
+        contract's ``overlay`` semantics (docs/architecture/04-api-sozlesmesi.md).
+        ``image_weight=0.6`` keeps the original scene recognizable (heatmap ~40%).
+        """
         rgb = image.convert("RGB").resize((self._image_size, self._image_size))
         rgb_float = np.asarray(rgb, dtype=np.float32) / 255.0
-        overlay = show_cam_on_image(rgb_float, self.heatmap_mask(image), use_rgb=True)
+        overlay = show_cam_on_image(
+            rgb_float, self.heatmap_mask(image), use_rgb=True, image_weight=0.6
+        )
         return encode_png_base64(overlay)
