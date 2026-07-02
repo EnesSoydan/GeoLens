@@ -61,9 +61,16 @@ def _ready_service() -> tuple[PredictionService, object]:
 
 
 @pytest.fixture
-def not_ready_client():
-    with TestClient(create_app()) as client:
-        yield client
+def not_ready_client(tmp_path, monkeypatch):
+    # Point index_dir at an empty dir so lifespan finds no built artifacts and
+    # boots NOT_READY, independent of whether a real index exists on this machine.
+    monkeypatch.setenv("GEOLENS_INDEX_DIR", str(tmp_path / "empty_index"))
+    get_settings.cache_clear()
+    try:
+        with TestClient(create_app()) as client:
+            yield client
+    finally:
+        get_settings.cache_clear()
 
 
 @pytest.fixture

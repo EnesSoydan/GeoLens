@@ -57,6 +57,10 @@ class Settings(BaseSettings):
     default_top_k: int = 5
     confidence_threshold: float = 0.5  # Placeholder - calibrated in Sprint S5.
 
+    # Device the serving model runs on at startup ("cpu" or "cuda"). Defaults to
+    # cpu so the app boots anywhere; set GEOLENS_SERVING_DEVICE=cuda on the GPU box.
+    serving_device: str = "cpu"
+
     # API boundary.
     max_upload_mb: int = 10
 
