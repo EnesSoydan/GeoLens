@@ -1,6 +1,7 @@
 import pytest
 
 from app.core.exceptions import (
+    FileTooLargeError,
     GeoLensError,
     InvalidImageError,
     LowConfidenceError,
@@ -9,16 +10,18 @@ from app.core.exceptions import (
 
 
 @pytest.mark.parametrize(
-    ("exc", "code"),
+    ("exc", "status_code", "code"),
     [
-        (InvalidImageError, 422),
-        (LowConfidenceError, 200),
-        (ModelNotReadyError, 503),
+        (InvalidImageError, 400, "INVALID_IMAGE"),
+        (FileTooLargeError, 413, "FILE_TOO_LARGE"),
+        (LowConfidenceError, 200, "LOW_CONFIDENCE"),
+        (ModelNotReadyError, 503, "MODEL_NOT_READY"),
     ],
 )
-def test_status_codes(exc, code):
+def test_status_and_error_codes(exc, status_code, code):
     assert issubclass(exc, GeoLensError)
-    assert exc().status_code == code
+    assert exc().status_code == status_code
+    assert exc().code == code
 
 
 def test_default_message_from_docstring():

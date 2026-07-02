@@ -3,6 +3,8 @@
 
 > Araştırma-only çıktı. Kod/uygulama dosyası üretilmemiştir.
 
+> **⚠️ ERRATA (2026-07):** Aşağıdaki "Hedef şehir = Amsterdam" kararı faktüel hataya dayanıyordu. Geçerli hedef: resmi MSLS-val = **cph+sf** (Kopenhag + San Francisco). Ayrıntı için `faz-b.md` errata'sına bakınız.
+
 ---
 
 ## 1) Proje İsim Önerileri

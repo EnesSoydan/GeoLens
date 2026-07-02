@@ -6,7 +6,7 @@ def test_defaults():
     assert s.app_name == "GeoLens"
     assert s.embedding_dim == 8448
     assert s.default_top_k == 5
-    assert s.target_city == "amsterdam"
+    assert s.target_cities == ("cph", "sf")
 
 
 def test_get_settings_is_cached():

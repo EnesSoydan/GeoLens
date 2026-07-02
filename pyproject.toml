@@ -5,9 +5,9 @@ build-backend = "hatchling.build"
 [project]
 name = "geolens"
 version = "0.1.0"
-description = "GeoLens - retrieval-first visual geo-localization with explainability (MSLS Amsterdam MVP)."
+description = "GeoLens - retrieval-first visual geo-localization with explainability (MSLS-val Copenhagen + San Francisco MVP)."
 readme = "README.md"
-requires-python = ">=3.11"
+requires-python = ">=3.11,<3.13"
 license = { text = "MIT" }
 
 # Runtime dependencies. Heavy ML libs (torch/faiss/gradio) are declared here
@@ -24,6 +24,10 @@ dependencies = [
     "torch>=2.2",
     "torchvision>=0.17",
     "faiss-cpu>=1.8",
+    # Required by the serizba/salad hub model: VPRModel subclasses LightningModule
+    # and its __init__ instantiates a metric-learning loss even for inference.
+    "pytorch-lightning>=2.2",
+    "pytorch-metric-learning>=2.3",
     "huggingface-hub>=0.23",
     "gradio>=4.36",
     "folium>=0.17",
@@ -58,6 +62,11 @@ ignore = ["D203", "D213"]
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"
+
+# FastAPI's dependency-injection markers are called in argument defaults by
+# design; they are effectively immutable, so exempt them from B008.
+[tool.ruff.lint.flake8-bugbear]
+extend-immutable-calls = ["fastapi.Depends", "fastapi.File", "fastapi.Form", "fastapi.Query"]
 
 [tool.ruff.lint.per-file-ignores]
 "tests/**" = ["D"]

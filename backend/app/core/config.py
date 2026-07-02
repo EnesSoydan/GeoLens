@@ -10,6 +10,7 @@ from __future__ import annotations
 from functools import lru_cache
 from pathlib import Path
 
+from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 # Repo root: backend/app/core/config.py -> parents[3] == project root.
@@ -36,14 +37,29 @@ class Settings(BaseSettings):
     index_dir: Path = PROJECT_ROOT / "data" / "index"
     weights_dir: Path = PROJECT_ROOT / "models" / "weights"
 
-    # MSLS dataset.
+    # MSLS dataset. The official mapillary_sls validation split is the two-city
+    # set ["cph", "sf"] (Copenhagen + San Francisco) with public ground truth,
+    # which is what the 740-query MSLS-val protocol evaluates on. Amsterdam is a
+    # *training* city and has no standard val benchmark, so it is out of scope.
     msls_raw_dir: Path | None = None
-    target_city: str = "amsterdam"
+    target_cities: tuple[str, ...] = ("cph", "sf")
+
+    @field_validator("target_cities", mode="before")
+    @classmethod
+    def _split_cities(cls, value: object) -> object:
+        """Allow a comma-separated env string (e.g. ``cph,sf``) for the tuple."""
+        if isinstance(value, str):
+            return tuple(c.strip() for c in value.split(",") if c.strip())
+        return value
 
     # Retrieval / model parameters (some are placeholders, calibrated later).
     embedding_dim: int = 8448  # DINOv2 ViT-B/14 + SALAD.
     default_top_k: int = 5
     confidence_threshold: float = 0.5  # Placeholder - calibrated in Sprint S5.
+
+    # Device the serving model runs on at startup ("cpu" or "cuda"). Defaults to
+    # cpu so the app boots anywhere; set GEOLENS_SERVING_DEVICE=cuda on the GPU box.
+    serving_device: str = "cpu"
 
     # API boundary.
     max_upload_mb: int = 10

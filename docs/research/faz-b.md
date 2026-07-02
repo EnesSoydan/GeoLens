@@ -2,7 +2,9 @@
 ## FAZ B: Veri Setleri ve Model Mimarisi
 
 > Araştırma-only çıktı. Kod/uygulama dosyası üretilmemiştir.
-> Not: Bu dosya, RAM bellek-bütçesi düzeltmesi ve nihai şehir kararı (Amsterdam) dahil güncel halidir.
+> Not: Bu dosya, RAM bellek-bütçesi düzeltmesi ve şehir kararı dahil güncel halidir.
+
+> **⚠️ ERRATA (2026-07):** Aşağıdaki "Hedef Şehir: Amsterdam" kararı **faktüel bir hataya** dayanıyordu. Bu bölüm (özellikle bir sonraki alt-başlık) MSLS split'ini tersine yazmış: *doğrusu* resmi `mapillary_sls` `default_cities['val'] == ['cph','sf']` (Kopenhag + San Francisco = **doğrulama**, açık GT), **Amsterdam ve Manila TRAIN şehirleridir**. Kararın gerekçesi ("Recall@N self-eval → açık GT'li val şehri gerekir") DOĞRU; ama yanlış faktlarla yanlış şehre götürmüş. Doğru faktlarla aynı gerekçe **cph+sf**'ye götürür. **Geçerli hedef: resmi MSLS-val (cph+sf).** Orijinal (hatalı) metin, karar izini korumak için aşağıda değiştirilmeden bırakılmıştır; bağlayıcı olan bu errata'dır.
 
 ---
 

@@ -9,7 +9,7 @@
 | **S2 — Retrieval API** | lifespan yükleme, retrieval_service, /predict (heatmapsiz), /health, /model-info, hata yönetimi | Koordinat döndüren API | S1 | ✓ |
 | **S3 — XAI & Güven** | Eigen-CAM xai_service, base64 heatmap, güven eşiği, global GPU semaphore | /predict heatmap+güven | S2 | kısmi |
 | **S4 — Frontend (Gradio) & Harita** | Gradio Blocks, folium/Leaflet, top-K liste, heatmap, HTTP entegrasyon | Uçtan uca demo | S2 (S3 paralel) | ✓ |
-| **S5 — Değerlendirme, Deploy & Portföy** | evaluate.py (**resmi MSLS-val protokolü, 740 sorgu Amsterdam alt-kümesi; eşik 25 m VE ≤40°**; Recall@N+km-hata), NetVLAD baseline'ı aynı alt-kümede çalıştır, benchmark, Docker, HF Spaces, README+hero GIF+Mermaid | Canlı demo + benchmark + cilalı repo | S1(eval), S4(demo) | ✓ |
+| **S5 — Değerlendirme, Deploy & Portföy** | evaluate.py (**resmi MSLS-val protokolü, 740 sorgu cph+sf; eşik 25 m VE ≤40°**; Recall@N+km-hata), NetVLAD baseline'ı aynı val'de çalıştır, benchmark, Docker, HF Spaces, README+hero GIF+Mermaid | Canlı demo + benchmark + cilalı repo | S1(eval), S4(demo) | ✓ |
 
 ## Kritik Yol
 ```mermaid

@@ -9,10 +9,10 @@
 - **Sprint yol haritası + kritik yol** net; S0 hemen başlatılabilir.
 - **Kalan belirsizlikler blokör değil** (aşağıda); implementasyon detayı seviyesinde, ilk sprint'lerde kalibre edilir.
 
-> **Uyarı:** Development fazı ayrı ve açık onaya tabidir. Kapsam disiplini korunmalı: MVP yalnız Amsterdam; çok-şehir/real-time/VLM/Next.js → v2.
+> **Uyarı:** Development fazı ayrı ve açık onaya tabidir. Kapsam disiplini korunmalı: MVP yalnız resmi MSLS-val (cph+sf); ek şehir/real-time/VLM/Next.js → v2.
 
 ## Açık Sorular
-1. **MSLS GT pozitif eşiği:** ÇÖZÜLDÜ → resmi mapillary_sls eşiği **25 m VE ≤40° bakış-açısı** (birlikte); resmi MSLS-val protokolü (740 sorgu, Amsterdam alt-kümesi). Kalan: Amsterdam alt-kümesinin kesin database/query sayıları resmi split dosyalarından okunacak.
+1. **MSLS GT pozitif eşiği:** ÇÖZÜLDÜ → resmi mapillary_sls eşiği **25 m VE ≤40° bakış-açısı** (birlikte); resmi MSLS-val protokolü (740 sorgu, cph+sf). Kalan: cph+sf database/query kesin sayıları resmi split dosyalarından okunacak.
 2. **Yükleme boyut limiti:** `/predict` için maks dosya boyutu (örn. 10 MB) — kesinleştirilecek.
 3. **Güven eşiği (`is_confident`):** ampirik; S5 değerlendirmede kalibre edilecek (şimdilik placeholder).
 4. **HF Spaces GPU katmanı:** ZeroGPU vs T4 — deploy anında maliyet/kota kararı.

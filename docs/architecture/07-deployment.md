@@ -31,7 +31,7 @@ flowchart LR
 | **HF Hub (model/dataset repo)** | ✓ Büyük artifact için tasarlı; HF Spaces doğal; hf_hub_download |
 | GitHub Release asset | Basit; CI/programatik erişim zayıf |
 
-**Öneri: HF Hub.** DINOv2/SALAD zaten HF'te; Amsterdam index → HF dataset repo, startup'ta çekilir. Git repo hafif. GitHub-only kalınırsa Git LFS yedek.
+**Öneri: HF Hub.** DINOv2/SALAD zaten HF'te; MSLS-val (cph+sf) index → HF dataset repo, startup'ta çekilir. Git repo hafif. GitHub-only kalınırsa Git LFS yedek.
 
 ### MİM-4a Özeti
 Tek container (FastAPI+Gradio) + volume'ler; yerel geliştirme + HF Spaces demo; artifact'lar HF Hub'dan.

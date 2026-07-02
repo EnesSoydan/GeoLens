@@ -1,7 +1,7 @@
 # GeoLens
 
 > Retrieval-first visual geo-localization with explainability — MVP on the
-> MSLS **Amsterdam** subset.
+> official MSLS **validation** split (**Copenhagen + San Francisco**).
 
 Given a street-level photo, GeoLens retrieves the most visually similar
 reference images from a geo-tagged database, predicts a coordinate, and shows
@@ -33,13 +33,16 @@ GPU semaphore; Gradio + Leaflet frontend. See
 [`docs/architecture/00-genel-bakis.md`](docs/architecture/00-genel-bakis.md).
 
 ## Dataset
-Mapillary Street-Level Sequences (**MSLS**), Amsterdam validation city
-(CC-BY-SA, Mapillary registration required). The dataset is **license-gated**
-and not redistributed here.
+Mapillary Street-Level Sequences (**MSLS**), official **validation** cities
+Copenhagen (`cph`) and San Francisco (`sf`) — these are the two cities the
+standard 740-query MSLS-val protocol evaluates on, and they carry public ground
+truth (Amsterdam is a *training* city and out of scope). CC-BY-SA, Mapillary
+registration required. The dataset is **license-gated** and not redistributed
+here.
 
 1. Register and accept the license at <https://www.mapillary.com/dataset/places>.
 2. Download the `train_val` archive.
-3. Filter the Amsterdam subset:
+3. Filter the MSLS-val subset (both cities by default):
    ```bash
    python scripts/download_msls.py --source <extracted_dir_or_zip>
    ```
@@ -65,8 +68,21 @@ uvicorn app.main:app --reload --app-dir backend
 <!-- TODO(S5): Docker + Hugging Face Spaces. -->
 
 ## Roadmap
-- **MVP (S0–S5):** Amsterdam, DINOv2+SALAD, FAISS Flat, Eigen-CAM, Gradio.
+- **MVP (S0–S5):** MSLS-val (cph+sf), DINOv2+SALAD, FAISS Flat, Eigen-CAM, Gradio.
 - **v2 (out of scope):** multi-city, Next.js, PostGIS, Qdrant, VLM rationale.
 
+## Dependencies & Licensing
+- **Project code:** MIT (see [LICENSE](LICENSE)).
+- **Dataset:** MSLS under CC-BY-SA (Mapillary terms).
+- **Model:** the DINOv2 + SALAD descriptor is loaded at runtime via `torch.hub`
+  from [`serizba/salad`](https://github.com/serizba/salad), which is licensed
+  **GPL-3.0**. SALAD is therefore a runtime dependency of GeoLens (fetched via
+  the hub), and it is executed by the served application — including the public
+  Hugging Face Spaces demo planned in the deployment design. GeoLens keeps its
+  own source under MIT and does not vendor SALAD's code, but the running/served
+  application incorporates GPL-3.0 code. For commercial or official use, consult
+  legal counsel to confirm exact license compliance.
+
 ## License
-[MIT](LICENSE). Dataset under its own CC-BY-SA terms.
+[MIT](LICENSE) for GeoLens's own code. Third-party components retain their own
+licenses — see [Dependencies & Licensing](#dependencies--licensing).

@@ -42,10 +42,10 @@
 | aggregator | str | "SALAD" |
 | embedding_dim | int | 8448 |
 | index_type | str | "FAISS IndexFlatIP" |
-| index_size | int | Amsterdam database sayısı (resmi split; full-val ~18.9k'nın alt-kümesi) |
-| dataset | str | "MSLS Amsterdam" |
+| index_size | int | Resmi MSLS-val database sayısı (cph+sf; ~18.9k) |
+| dataset | str | "MSLS-val (cph+sf)" |
 | model_hash | str | manifest hash |
-| city | str | "Amsterdam" |
+| cities | list[str] | ["cph", "sf"] |
 
 ## GET /health — Response
 | Alan | Tip |

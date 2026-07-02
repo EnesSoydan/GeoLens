@@ -1,10 +1,12 @@
-"""Filter the MSLS Amsterdam subset used by GeoLens.
+"""Filter the MSLS-val subset used by GeoLens.
 
 The Mapillary Street-Level Sequences (MSLS) dataset is license-gated
 (CC-BY-SA, Mapillary registration required). This script does NOT bypass that:
 it expects you to have already obtained the MSLS ``train_val`` archive from
-https://www.mapillary.com/dataset/places and only *filters* the single target
-city (default: Amsterdam) into ``data/raw/msls_amsterdam``.
+https://www.mapillary.com/dataset/places and only *filters* the official
+validation cities (default: Copenhagen ``cph`` + San Francisco ``sf``) into
+``data/raw/msls_val/<city>``. Each city keeps its own ``database``/``query``
+layout so that the 740-query MSLS-val protocol can be reproduced downstream.
 
 Parsing the filtered subset into SQLite + FAISS happens later in Sprint S1
 (``scripts/build_index.py``).
@@ -12,6 +14,7 @@ Parsing the filtered subset into SQLite + FAISS happens later in Sprint S1
 Usage:
     python scripts/download_msls.py --source /path/to/msls_root
     python scripts/download_msls.py --source /path/to/msls_train_val.zip
+    python scripts/download_msls.py --source /path/to/msls_root --cities cph
     python scripts/download_msls.py --source /path/to/msls_root --dry-run
 """
 
@@ -28,8 +31,9 @@ from pathlib import Path
 logger = logging.getLogger("download_msls")
 
 DATASET_PAGE = "https://www.mapillary.com/dataset/places"
-DEFAULT_CITY = "amsterdam"
-DEFAULT_DEST = Path("data/raw/msls_amsterdam")
+# Official mapillary_sls validation split (public ground truth).
+DEFAULT_CITIES = ("cph", "sf")
+DEFAULT_DEST = Path("data/raw/msls_val")
 # A valid MSLS city dir contains at least one of these role sub-directories.
 CITY_CHILD_MARKERS = ("database", "query")
 
@@ -128,14 +132,37 @@ def _print_access_instructions() -> None:
     )
 
 
+def _run_city(source: Path, city: str, city_dest: Path, overwrite: bool, dry_run: bool) -> int:
+    """Filter a single city into ``city_dest`` and return an exit code."""
+    if source.is_file() and source.suffix.lower() == ".zip":
+        stats = extract_city_from_zip(source, city, city_dest, dry_run)
+    else:
+        city_dir = find_city_dir(source, city)
+        if city_dir is None:
+            logger.error("City '%s' not found under %s", city, source)
+            return 1
+        logger.info("Found city dir: %s", city_dir)
+        stats = copy_city_subset(city_dir, city_dest, overwrite, dry_run)
+
+    if stats.files == 0 and stats.skipped == 0:
+        logger.error("No files matched city '%s'.", city)
+        return 1
+
+    verb = "Would copy" if dry_run else "Copied"
+    logger.info("%s %d files (skipped %d) -> %s", verb, stats.files, stats.skipped, city_dest)
+    for role, count in sorted(stats.roles.items()):
+        logger.info("  role=%s: %d files", role, count)
+    return 0
+
+
 def run(
     source: Path | None,
-    city: str,
+    cities: list[str],
     dest: Path,
     overwrite: bool,
     dry_run: bool,
 ) -> int:
-    """Execute the filtering and return a process exit code."""
+    """Filter every city in ``cities`` into ``dest/<city>`` and return an exit code."""
     if source is None:
         _print_access_instructions()
         return 2
@@ -144,37 +171,31 @@ def run(
         return 2
 
     dest.mkdir(parents=True, exist_ok=True)
-    if source.is_file() and source.suffix.lower() == ".zip":
-        stats = extract_city_from_zip(source, city, dest, dry_run)
-    else:
-        city_dir = find_city_dir(source, city)
-        if city_dir is None:
-            logger.error("City '%s' not found under %s", city, source)
-            return 1
-        logger.info("Found city dir: %s", city_dir)
-        stats = copy_city_subset(city_dir, dest, overwrite, dry_run)
-
-    if stats.files == 0 and stats.skipped == 0:
-        logger.error("No files matched city '%s'.", city)
-        return 1
-
-    verb = "Would copy" if dry_run else "Copied"
-    logger.info("%s %d files (skipped %d) -> %s", verb, stats.files, stats.skipped, dest)
-    for role, count in sorted(stats.roles.items()):
-        logger.info("  role=%s: %d files", role, count)
+    for city in cities:
+        city_dest = dest / city.lower()
+        city_dest.mkdir(parents=True, exist_ok=True)
+        code = _run_city(source, city, city_dest, overwrite, dry_run)
+        if code != 0:
+            return code
     return 0
 
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     """Parse command-line arguments."""
-    parser = argparse.ArgumentParser(description="Filter the MSLS Amsterdam subset into data/raw.")
+    parser = argparse.ArgumentParser(
+        description="Filter the MSLS-val (cph+sf) subset into data/raw."
+    )
     parser.add_argument(
         "--source",
         type=Path,
         default=None,
         help="Extracted MSLS root directory or a .zip archive.",
     )
-    parser.add_argument("--city", default=DEFAULT_CITY, help="Target city (default: amsterdam).")
+    parser.add_argument(
+        "--cities",
+        default=",".join(DEFAULT_CITIES),
+        help="Comma-separated target cities (default: cph,sf).",
+    )
     parser.add_argument("--dest", type=Path, default=DEFAULT_DEST, help="Destination directory.")
     parser.add_argument("--overwrite", action="store_true", help="Overwrite existing files.")
     parser.add_argument("--dry-run", action="store_true", help="Report counts without copying.")
@@ -185,7 +206,8 @@ def main(argv: list[str] | None = None) -> int:
     """CLI entry point."""
     logging.basicConfig(level=logging.INFO, format="%(levelname)s %(message)s")
     args = parse_args(argv)
-    return run(args.source, args.city, args.dest, args.overwrite, args.dry_run)
+    cities = [c.strip() for c in args.cities.split(",") if c.strip()]
+    return run(args.source, cities, args.dest, args.overwrite, args.dry_run)
 
 
 if __name__ == "__main__":
