@@ -55,9 +55,13 @@ pip install -e ".[dev]"
 ```
 
 ## Usage
-<!-- TODO(S2/S4): run the API + Gradio UI. -->
+Run the API + the mounted Gradio UI (served together at `/ui`, API under
+`/api/v1`). The project root is on `PYTHONPATH` so the `frontend` package (the UI)
+is importable alongside the `backend` `app` package:
 ```bash
-uvicorn app.main:app --reload --app-dir backend
+PYTHONPATH=backend:. uvicorn app.main:app --reload
+# API:  http://127.0.0.1:8000/api/v1/health
+# UI:   http://127.0.0.1:8000/ui
 ```
 
 ## Evaluation

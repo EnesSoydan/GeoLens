@@ -47,7 +47,7 @@ async def _validation_error_handler(
 
 
 def create_app() -> FastAPI:
-    """Build and configure the FastAPI application."""
+    """Build and configure the FastAPI application (API only, no UI)."""
     settings = get_settings()
     app = FastAPI(title=settings.app_name, version=settings.version, lifespan=lifespan)
 
@@ -59,4 +59,18 @@ def create_app() -> FastAPI:
     return app
 
 
-app = create_app()
+def mount_ui(app: FastAPI) -> FastAPI:
+    """Mount the Gradio Blocks UI at ``/ui`` on the same app (same container).
+
+    The UI talks to this very app over HTTP (docs/architecture/05-frontend.md), so
+    the ``gradio``/``frontend`` imports are local to this function: the API-only
+    ``create_app`` (used by the test suite) never pulls in Gradio.
+    """
+    import gradio as gr
+    from frontend.gradio_app.app import build_ui
+
+    return gr.mount_gradio_app(app, build_ui(), path="/ui")
+
+
+# uvicorn entrypoint ``app.main:app`` serves the API + the mounted Gradio UI.
+app = mount_ui(create_app())
