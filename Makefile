@@ -20,5 +20,5 @@ check: lint type test  ## Full local quality gate (mirrors CI).
 download-msls:  ## Filter the MSLS-val (cph+sf) subset (set MSLS_RAW_DIR).
 	python scripts/download_msls.py --source "$(MSLS_RAW_DIR)"
 
-run:  ## Start the FastAPI dev server.
-	uvicorn app.main:app --reload --app-dir backend
+run:  ## Start the FastAPI dev server (API + mounted Gradio UI at /ui).
+	PYTHONPATH=backend:. uvicorn app.main:app --reload
