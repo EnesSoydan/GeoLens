@@ -35,7 +35,7 @@ GPU semaphore; Gradio + Leaflet frontend. See
 ## Dataset
 Mapillary Street-Level Sequences (**MSLS**), official **validation** cities
 Copenhagen (`cph`) and San Francisco (`sf`) — these are the two cities the
-standard 740-query MSLS-val protocol evaluates on, and they carry public ground
+standard 750-query MSLS-val protocol evaluates on, and they carry public ground
 truth (Amsterdam is a *training* city and out of scope). CC-BY-SA, Mapillary
 registration required. The dataset is **license-gated** and not redistributed
 here.
@@ -65,8 +65,36 @@ PYTHONPATH=backend:. uvicorn app.main:app --reload
 ```
 
 ## Evaluation
-<!-- TODO(S5): official MSLS-val protocol (740 queries, 25 m AND <=40 deg GT),
-     Recall@1/5/10 + median km error, NetVLAD baseline on the same subset. -->
+Measured with the **official mapillary_sls MSLS-val protocol** on the two
+validation cities (`cph` + `sf`). Queries are the `subtask='all'` set
+(`query/subtask_index.csv` `all == True`): 502 (cph) + 248 (sf) = **750**
+queries. A database image is a **positive** for a query iff their GPS positions
+are within **25 m** — distance only; the reference protocol
+(`mapillary_sls/evaluate.py --threshold 25`, positives via
+`NearestNeighbors.radius_neighbors` on UTM) uses **no orientation/heading term**,
+so we do not apply one either. Reproduce with:
+
+```bash
+PYTHONPATH=backend python scripts/evaluate.py --device cuda \
+    --output data/index/msls_val_metrics.json
+```
+
+| Model | R@1 | R@5 | R@10 | Median km-error |
+|---|---|---|---|---|
+| **DINOv2 + SALAD (ours)** | **91.9%** | **96.4%** | **96.9%** | **8 m** |
+| NetVLAD (ResNet, baseline) | 82.6% | 89.6% | 92.0% | — |
+
+- **Ours** is measured by `scripts/evaluate.py` over **743 of the 750** queries
+  (7 have no positive within 25 m and are dropped from the denominator, matching
+  the reference implementation), using the official MSLS-val protocol (25 m
+  radius). Full metrics (incl. R@20 97.4%, mean km-error 0.105 km) are written to
+  `data/index/msls_val_metrics.json`.
+- **NetVLAD** numbers are cited from the literature, **not** re-run here:
+  Izquierdo & Civera, *"Optimal Transport Aggregation for Visual Place
+  Recognition"* (SALAD), CVPR 2024, **Table 1**, MSLS-val column — the classic
+  **ResNet-backboned NetVLAD** row. (The same table's separate *DINOv2-NetVLAD*
+  ablation row, R@1 92.4%, is **not** the standard NetVLAD baseline and is
+  intentionally excluded.)
 
 ## Deployment
 <!-- TODO(S5): Docker + Hugging Face Spaces. -->
