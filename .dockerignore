@@ -1,0 +1,24 @@
+# Keep the Docker build context small: the image installs deps from PyPI and
+# fetches weights/index at build/startup, so none of the local heavy data,
+# virtualenv, caches, or dev tooling should be shipped into the context.
+.venv/
+.git/
+.github/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+__pycache__/
+*.pyc
+
+# Local ML artifacts (built offline, delivered via HF Hub, not the image).
+data/
+models/
+*.faiss
+*.db
+
+# Docs, tests, tooling not needed at runtime.
+docs/
+tests/
+scripts/
+.pre-commit-config.yaml
+.claude/
