@@ -34,5 +34,8 @@ Thumbs.db
 .idea/
 .vscode/
 
+# Generated HF Space build context (scripts/prepare_hf_space.py)
+hf_space_build/
+
 # Local Claude Code settings
 .claude/
