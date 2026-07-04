@@ -19,20 +19,41 @@ This file is the Space configuration; the image is built from `deploy/Dockerfile
 
 ## Deploying this Space
 
-1. **Create a Docker Space** and push this repository to it. Place this file at
-   the Space repo root as `README.md` (HF reads the YAML frontmatter above:
-   `sdk: docker`, `app_port: 7860`). Point the Space at `deploy/Dockerfile`.
+A HF Docker Space only reads `Dockerfile` + this frontmatter `README.md` at the
+**repo root** (no nested path). This project keeps its deploy files under
+`deploy/`, so a helper assembles a valid root build context.
 
-2. **Upload the FAISS index to an HF *dataset* repo** (it is ~639 MB and is not
-   baked into the image). From a machine that has the built artifacts:
+1. **Upload the FAISS index to an HF *dataset* repo** (~639 MB, not baked into
+   the image). From a machine with the built artifacts:
 
    ```bash
-   huggingface-cli upload <user>/geolens-msls-val-index \
+   hf upload <user>/geolens-msls-val-index \
        data/index/index.faiss data/index/metadata.db data/index/manifest.json \
        --repo-type dataset
    ```
 
-3. **Set Space variables/secrets:**
+2. **Assemble the Space build context** (relocates `deploy/Dockerfile` + this
+   README to the root and verifies every COPY path):
+
+   ```bash
+   python scripts/prepare_hf_space.py     # -> hf_space_build/
+   ```
+
+3. **Create a Docker Space** on huggingface.co (SDK: Docker, CPU basic).
+
+4. **Push only `hf_space_build/` to the Space repo.** HF pre-seeds a new Space
+   with an initial commit (README + .gitattributes), so the first push from a
+   fresh local history is rejected as non-fast-forward — force-push over the
+   auto-scaffold (safe: it is your own empty Space):
+
+   ```bash
+   cd hf_space_build
+   git init && git add . && git commit -m "GeoLens Space"
+   git remote add space https://huggingface.co/spaces/<user>/<space-name>
+   git push space main --force
+   ```
+
+5. **Set Space variables/secrets:**
    - `GEOLENS_HF_INDEX_REPO = <user>/geolens-msls-val-index` (variable)
    - `HF_TOKEN` (secret) only if the dataset repo is private.
 
