@@ -30,7 +30,16 @@ ENV HOME=/home/user \
     GEOLENS_SERVING_DEVICE=cpu \
     # The mounted Gradio UI calls this container's API on the serving port (7860,
     # not the 8000 local-dev default). entrypoint.sh re-exports this to track PORT.
-    GEOLENS_API_BASE_URL=http://127.0.0.1:7860
+    GEOLENS_API_BASE_URL=http://127.0.0.1:7860 \
+    # Pin the CPU math libraries to the free tier's 2 vCPUs. Torch/OpenMP/BLAS
+    # otherwise size their thread pools from the *host* core count, oversubscribing
+    # the 2-vCPU container: 8+ compute threads thrash on 2 cores, inflating a
+    # ~2-3 s /predict to tens of seconds and starving the uvicorn event loop so
+    # the Gradio->API loopback call is refused. Raise these if you scale up the CPU.
+    OMP_NUM_THREADS=2 \
+    MKL_NUM_THREADS=2 \
+    OPENBLAS_NUM_THREADS=2 \
+    NUMEXPR_NUM_THREADS=2
 
 WORKDIR /app
 
