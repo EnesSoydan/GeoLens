@@ -27,7 +27,10 @@ ENV HOME=/home/user \
     # Bake + serve the model weights from here (see the warm step below).
     TORCH_HOME=/home/user/.cache/torch \
     # Serve on CPU: the HF free tier has no GPU.
-    GEOLENS_SERVING_DEVICE=cpu
+    GEOLENS_SERVING_DEVICE=cpu \
+    # The mounted Gradio UI calls this container's API on the serving port (7860,
+    # not the 8000 local-dev default). entrypoint.sh re-exports this to track PORT.
+    GEOLENS_API_BASE_URL=http://127.0.0.1:7860
 
 WORKDIR /app
 

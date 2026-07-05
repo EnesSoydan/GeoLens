@@ -51,11 +51,29 @@ _FILES: tuple[tuple[str, str], ...] = (
 _DIRS: tuple[str, ...] = ("backend", "frontend")
 
 
+def _clean_build_dir(out_dir: Path) -> None:
+    """Empty ``out_dir`` of generated content but keep an existing ``.git``.
+
+    Preserving ``.git`` means a regenerate-then-push cycle reuses the Space's git
+    history and remote (no need to re-add the remote after every regeneration),
+    and it sidesteps the read-only git object files that break a full ``rmtree``
+    on Windows. Only the regenerated source/config is removed and rewritten.
+    """
+    if not out_dir.exists():
+        out_dir.mkdir(parents=True)
+        return
+    for child in out_dir.iterdir():
+        if child.name == ".git":
+            continue
+        if child.is_dir():
+            shutil.rmtree(child)
+        else:
+            child.unlink()
+
+
 def _copy_into(out_dir: Path) -> None:
-    """Copy the required files and source trees into a clean ``out_dir``."""
-    if out_dir.exists():
-        shutil.rmtree(out_dir)
-    out_dir.mkdir(parents=True)
+    """Copy the required files and source trees into ``out_dir`` (keeps ``.git``)."""
+    _clean_build_dir(out_dir)
 
     for src_rel, dest_rel in _FILES:
         src = REPO_ROOT / src_rel

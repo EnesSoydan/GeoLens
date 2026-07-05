@@ -35,4 +35,10 @@ PY
 fi
 
 export GEOLENS_INDEX_DIR="${INDEX_DIR}"
-exec uvicorn app.main:app --host 0.0.0.0 --port "${PORT:-7860}"
+
+# The mounted Gradio UI calls this same container's API over loopback, so its
+# base URL must match the port uvicorn actually serves on (7860 here, not the
+# 8000 local-dev default). Track PORT so a Space PORT override stays consistent.
+PORT="${PORT:-7860}"
+export GEOLENS_API_BASE_URL="http://127.0.0.1:${PORT}"
+exec uvicorn app.main:app --host 0.0.0.0 --port "${PORT}"
