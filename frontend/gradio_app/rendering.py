@@ -16,7 +16,8 @@ from __future__ import annotations
 import base64
 import binascii
 import io
-from typing import Any
+from html import escape
+from typing import Any, cast
 
 import folium
 from PIL import Image, UnidentifiedImageError
@@ -54,8 +55,37 @@ def build_map_html(predictions: list[dict[str, Any]]) -> str:
         ).add_to(fmap)
 
     fmap.fit_bounds([[min(lats), min(lons)], [max(lats), max(lons)]])
-    html: str = fmap._repr_html_()
-    return html
+
+    # Gradio inserts this HTML into a column whose width settles only after the
+    # page is laid out, so Leaflet initialises against a too-small container and
+    # paints only part of the map (the rest stays gray). Re-measure once loaded
+    # and again whenever the iframe body is resized. The map JS variable is only
+    # dereferenced inside the callbacks, after folium's own script has defined it.
+    map_var = fmap.get_name()
+    # get_root() is typed as the Element base class but is a Figure at runtime.
+    root = cast(folium.Figure, fmap.get_root())
+    root.html.add_child(
+        folium.Element(
+            "<script>"
+            "window.addEventListener('load', function () {"
+            f"  var fix = function () {{ {map_var}.invalidateSize(); }};"
+            "  setTimeout(fix, 150);"
+            "  if (window.ResizeObserver) {"
+            "    new ResizeObserver(fix).observe(document.body);"
+            "  }"
+            "});"
+            "</script>"
+        )
+    )
+
+    # Render the full standalone page and embed it ourselves in a fluid-width
+    # iframe (folium's _repr_html_ notebook wrapper uses a fixed aspect-ratio
+    # box that misbehaves inside Gradio).
+    page = root.render()
+    return (
+        f'<iframe srcdoc="{escape(page)}" '
+        'style="width:100%;height:420px;border:none;display:block;"></iframe>'
+    )
 
 
 def predictions_to_rows(predictions: list[dict[str, Any]]) -> list[list[Any]]:
