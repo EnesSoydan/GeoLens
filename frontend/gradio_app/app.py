@@ -78,6 +78,14 @@ def build_ui(client: GeoLensClient | None = None) -> gr.Blocks:
             "Bir sokak görüntüsü yükleyin; model en benzer referansları bulup "
             "konumu tahmin eder ve modelin nereye baktığını Eigen-CAM ile gösterir."
         )
+        gr.Markdown(
+            "> **En iyi sonuç için gerçek sokak-seviyesi fotoğraflar kullanın.** "
+            "Referans indeksi yalnızca **Kopenhag** ve **San Francisco**'nun MSLS "
+            "sokak görüntülerinden oluşur. Turistik/rastgele web fotoğrafları, "
+            "iç mekân veya bu iki şehir dışındaki görüntüler düşük güven ve yanlış "
+            "tahmin verebilir — bu, modelin dağılım-dışı (out-of-distribution) "
+            "girdideki beklenen davranışıdır."
+        )
         with gr.Row():
             with gr.Column():
                 image_in = gr.Image(type="pil", label="Sorgu görüntüsü")

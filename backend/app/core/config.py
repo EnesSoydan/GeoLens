@@ -39,8 +39,8 @@ class Settings(BaseSettings):
 
     # MSLS dataset. The official mapillary_sls validation split is the two-city
     # set ["cph", "sf"] (Copenhagen + San Francisco) with public ground truth,
-    # which is what the 740-query MSLS-val protocol evaluates on. Amsterdam is a
-    # *training* city and has no standard val benchmark, so it is out of scope.
+    # which is what the 750-query MSLS-val protocol evaluates on (the subtask='all'
+    # queries). Amsterdam is a *training* city with no standard val benchmark.
     msls_raw_dir: Path | None = None
     target_cities: tuple[str, ...] = ("cph", "sf")
 
@@ -55,7 +55,12 @@ class Settings(BaseSettings):
     # Retrieval / model parameters (some are placeholders, calibrated later).
     embedding_dim: int = 8448  # DINOv2 ViT-B/14 + SALAD.
     default_top_k: int = 5
-    confidence_threshold: float = 0.5  # Placeholder - calibrated in Sprint S5.
+    # Top-1 cosine above which a prediction is flagged confident (gates the UI
+    # low-confidence warning + Eigen-CAM heatmap). Calibrated on MSLS-val by
+    # scripts/calibrate_confidence.py: Youden's J optimum ~0.514 separating
+    # correct (mean sim 0.562) from incorrect (0.404) top-1 retrievals; at 0.51
+    # precision ~0.98 (of confident preds) at ~0.63 coverage. Sprint S5.
+    confidence_threshold: float = 0.51
 
     # Device the serving model runs on at startup ("cpu" or "cuda"). Defaults to
     # cpu so the app boots anywhere; set GEOLENS_SERVING_DEVICE=cuda on the GPU box.

@@ -8,13 +8,23 @@ behind the API; the frontend never imports torch/faiss.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+import os
+from dataclasses import dataclass, field
 from typing import Any
 
 import httpx
 
+# Local-dev fallback: `uvicorn app.main:app` serves the API (and mounted /ui) on
+# port 8000. On a deployed Space the API + UI share one container on port 7860, so
+# the loopback UI->API call must target that port instead; deploy/entrypoint.sh
+# exports GEOLENS_API_BASE_URL=http://127.0.0.1:<serving-port> to override this.
 DEFAULT_BASE_URL = "http://127.0.0.1:8000"
 PREDICT_PATH = "/api/v1/predict"
+
+
+def _default_base_url() -> str:
+    """Resolve the backend base URL from the environment (dev default 8000)."""
+    return os.environ.get("GEOLENS_API_BASE_URL", DEFAULT_BASE_URL)
 
 
 class PredictionError(Exception):
@@ -29,7 +39,7 @@ class GeoLensClient:
     ``httpx.MockTransport`` instead of a live server.
     """
 
-    base_url: str = DEFAULT_BASE_URL
+    base_url: str = field(default_factory=_default_base_url)
     timeout: float = 30.0
     transport: httpx.BaseTransport | None = None
 

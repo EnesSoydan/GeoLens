@@ -51,6 +51,19 @@ def test_build_map_html_contains_coordinates() -> None:
     assert "12.56" in html and "55.69" in html
 
 
+def test_build_map_html_is_fluid_width_and_self_resizing() -> None:
+    """Regression: the map must fill the Gradio container and re-measure itself.
+
+    The folium notebook wrapper sized the map before Gradio's layout settled,
+    leaving half the iframe gray. The fix embeds a fluid-width iframe whose
+    inner page calls ``invalidateSize()`` after load / on container resize.
+    """
+    html = build_map_html(_response()["predictions"])
+    assert "width:100%" in html
+    assert "invalidateSize" in html
+    assert "ResizeObserver" in html
+
+
 def test_build_map_html_empty_predictions_is_placeholder() -> None:
     html = build_map_html([])
     assert "iframe" not in html
