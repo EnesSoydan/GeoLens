@@ -33,6 +33,10 @@ from dataclasses import dataclass
 from pathlib import Path
 
 import numpy as np
+
+from app.core.config import get_settings
+from app.ml.faiss_io import read_index
+from app.services.embedding import EmbeddingService
 from scripts.evaluate import (
     _embed_queries,
     _load_database,
@@ -40,10 +44,6 @@ from scripts.evaluate import (
     _read_allowed_query_keys,
     ground_truth_positive_ids,
 )
-
-from app.core.config import get_settings
-from app.ml.faiss_io import read_index
-from app.services.embedding import EmbeddingService
 
 
 @dataclass(frozen=True)
