@@ -4,9 +4,26 @@ from __future__ import annotations
 
 import io
 
-from PIL import Image
+from PIL import Image, ImageOps
 
 from app.api.routes_predict import _strip_exif
+
+
+def _jpeg_with_orientation(tag: int) -> Image.Image:
+    """A landscape JPEG whose EXIF Orientation demands a display transform.
+
+    Asymmetric corner colours make any wrong rotation detectable pixel-wise.
+    """
+    img = Image.new("RGB", (16, 10), color=(200, 200, 200))
+    img.paste((220, 30, 30), (0, 0, 6, 4))  # red top-left marker
+    exif = Image.Exif()
+    exif[0x0112] = tag  # Orientation.
+    buf = io.BytesIO()
+    img.save(buf, format="JPEG", exif=exif.tobytes())
+    buf.seek(0)
+    loaded = Image.open(buf)
+    loaded.load()
+    return loaded
 
 
 def _jpeg_with_exif() -> Image.Image:
@@ -39,8 +56,22 @@ def test_strip_exif_removes_all_metadata():
 
 
 def test_strip_exif_preserves_pixels():
-    src = _jpeg_with_exif()
+    src = _jpeg_with_exif()  # Orientation defaults to 1 (upright) -> no transform.
     stripped = _strip_exif(src)
     assert stripped.size == src.size
     assert stripped.mode == src.mode
     assert list(stripped.getdata()) == list(src.getdata())
+
+
+def test_strip_exif_bakes_orientation_into_pixels():
+    # Orientation=6 (rotate 90 deg CW on display): the pipeline must feed the
+    # upright pixels, not the raw sideways sensor frame, or the query embedding
+    # ends up rotated relative to the upright MSLS reference index.
+    src = _jpeg_with_orientation(6)
+    expected = ImageOps.exif_transpose(src)  # ground-truth display orientation
+    stripped = _strip_exif(src)
+    # The strip output is rotated to portrait and matches the viewer orientation.
+    assert stripped.size == expected.size != src.size
+    assert list(stripped.getdata()) == list(expected.getdata())
+    # And the orientation tag itself is gone (rebuilt from raw pixels).
+    assert stripped.getexif().get(0x0112) is None

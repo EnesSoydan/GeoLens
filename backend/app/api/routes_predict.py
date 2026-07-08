@@ -14,7 +14,7 @@ import io
 
 from fastapi import APIRouter, Depends, File, Form, Request, UploadFile
 from fastapi.concurrency import run_in_threadpool
-from PIL import Image, UnidentifiedImageError
+from PIL import Image, ImageOps, UnidentifiedImageError
 
 from app.api.deps import get_manifest, get_prediction_service
 from app.core.config import get_settings
@@ -29,15 +29,24 @@ _ALLOWED_CONTENT_TYPES = {"image/jpeg", "image/png"}
 
 
 def _strip_exif(image: Image.Image) -> Image.Image:
-    """Return a metadata-free copy of ``image``.
+    """Return an upright, metadata-free copy of ``image``.
 
-    Rebuilding the image from raw pixel data drops every embedded metadata block,
+    First bake the EXIF orientation into the pixels: phone cameras usually store
+    the raw sensor frame (often landscape) plus an Orientation tag that viewers
+    apply for display. The MSLS index was built from already-upright images, so a
+    query fed in its raw sensor orientation is effectively rotated relative to the
+    reference set, yielding a mismatched embedding (low similarity, wrong city).
+    ``ImageOps.exif_transpose`` applies that rotation/flip so the model sees the
+    image the same way a human does.
+
+    Then rebuild from raw pixel data, which drops every embedded metadata block,
     including EXIF GPS tags. This is a privacy boundary: the service must not
     ingest or persist location data hidden in a user's upload (Faz D risk #27,
     GDPR; see docs/architecture/03-ai-pipeline.md online flow).
     """
-    clean = Image.new(image.mode, image.size)
-    clean.putdata(list(image.getdata()))
+    oriented = ImageOps.exif_transpose(image)
+    clean = Image.new(oriented.mode, oriented.size)
+    clean.putdata(list(oriented.getdata()))
     return clean
 
 

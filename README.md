@@ -64,6 +64,17 @@ PYTHONPATH=backend:. uvicorn app.main:app --reload
 # UI:   http://127.0.0.1:8000/ui
 ```
 
+> **Scope — use real street-level photos.** The reference index covers only the
+> MSLS street-level imagery of **Copenhagen** and **San Francisco**. On genuine
+> street-level queries from these cities the pipeline is confident and accurate
+> (validated: `cph` similarity ≈ 0.56, `sf` ≈ 0.63, correct city; see Evaluation).
+> Tourist/landmark or random web photos, indoor shots, and images from any other
+> city are **out-of-distribution**: expect low similarity (~0.3) and possibly the
+> wrong city. This is expected model behaviour on OOD input, not a defect — the
+> confidence gate flags such queries as low-confidence and withholds the heatmap.
+> (Phone uploads are auto-rotated via their EXIF orientation before matching, so
+> a portrait photo is not silently matched sideways.)
+
 ## Evaluation
 Measured with the **official mapillary_sls MSLS-val protocol** on the two
 validation cities (`cph` + `sf`). Queries are the `subtask='all'` set
