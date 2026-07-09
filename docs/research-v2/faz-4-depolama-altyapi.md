@@ -130,6 +130,69 @@ yapılır, yalnız nihai küçük indeks HF dataset'e yüklenir.
 - **HF free-tier:** inference için yeterli (IVFPQ ~0.5GB indeks, CPU); ham veri/embed ASLA
   HF'de olmaz — yalnız nihai küçük indeks HF dataset'e. Kalıcı 7/24 isteniyorsa ev sunucusu.
 
+---
+
+## 7. DÜZELTME — disk gerçekliği (kullanıcı yakaladı)
+
+§1/§6'daki **~430GB tepe** rakamı, ev sunucusu (**Casper Nirvana, 512GB NVMe toplam**)
+kapasitesinin **%84'ü**. Üzerinde zaten Docker/Portainer koşan bir sistemde bu **çok dar
+marj**. Üç netleştirme:
+
+### (1) Gerçek boş disk ÖLÇÜLMELİ — varsayım YOK
+Ben (asistan) sunucunun boş alanını **ölçemem** (erişimim yok). "512GB toplam" ≠ "430GB boş":
+OS + Docker imajları/volume'ları + Portainer + mevcut container'lar zaten yer kaplıyor.
+Tipik bir Ubuntu+Docker kurulumu 20-60GB+ tutabilir; imajlar birikirse çok daha fazla.
+**Kullanıcının çalıştırması gereken (ölçüm, varsayım değil):**
+```bash
+df -h /               # kök/veri bölümünde GERÇEK boş alan
+docker system df      # Docker'ın kapladığı imaj/volume/cache
+```
+Bu iki çıktı olmadan v2b'nin sunucuda mümkün olup olmadığı **bilinemez**. Faz 3'ün
+"ölçümsüz sayı yayınlanmaz" kuralı burada da geçerli: **430GB "sığar/sığmaz" kararı ölçüme
+bağlı, şimdilik AÇIK.**
+
+### (2) Akış deseninin arıza modu + güvenlik payı
+`indir → embed → flush → ham sil` deseninin tehlikesi: **bir adım hata verir/kesilirse
+"ham sil" adımı atlanır → indirilen shard'lar birikir → disk dolar → sonraki yazma
+başarısız → pipeline + potansiyel olarak Docker/OS bozulur** (tam dolu diskte servis
+container'ları da yazamaz). Gerekli önlemler:
+- **Sabit tampon (headroom) eşiği:** her batch öncesi `df` kontrolü; boş alan < örn. **50GB**
+  ise DUR (yazmaya başlama), asla diski son bayta kadar doldurma.
+- **İşlem-sonu temizlik garantisi:** ham shard silme `try/finally` (veya trap) içinde —
+  embed hata verse bile shard silinir; "başarı" beklemez.
+- **İdempotent/kaldığı-yerden:** her shard'ın embedding'i yazıldıktan SONRA ham silinir;
+  kesinti sonrası zaten-işlenmiş shard'lar atlanır (çift indirme yok, disk şişmez).
+- **Ayrı bölüm/kota:** mümkünse indirme dizinini Docker/OS bölümünden AYRI bir mount'a koy
+  → pipeline diski doldursa bile sistem/servis bölümü korunur.
+
+### (3) Tepe aslında DÜŞÜRÜLEBİLİR — 430GB pesimist
+§1'deki 430GB, **259GB ham VE 172GB ara embedding'in aynı anda diskte durduğu** en kötü
+hâli varsayar. Gerçekte **ikisi de gerekmez:**
+- **172GB ara embedding materyalize edilmeyebilir.** İki-geçişli akış: (geçiş-1) küçük
+  altküme embed'inden PCA + IVFPQ eğit; (geçiş-2) her batch'i embed→PCA-512→PQ-kodla→indekse
+  ekle, **ham float32 embedding'i diske yazMA** (yalnız ~0.5GB nihai kod büyür). → 172GB
+  ara **elenir**.
+- **259GB ham akışlı indirilir**, shard shard silinir → ham tepe = tek shard (birkaç GB) +
+  birikmiş indeks.
+- Böylece **gerçekçi tepe: birkaç-GB ham shard + ~0.5GB büyüyen indeks + ~kısa süreli
+  PCA/PQ eğitim altkümesi (~birkaç GB) ≈ 10-30GB civarı** olabilir (259GB'ı bir kez indirip
+  saklamak yerine akışlarsak). **AMA:** bu, OSV5M'in shard-shard indirilip aradan
+  silinebilmesine bağlı (snapshot_download tam-set çekme eğiliminde → şard-seçici indirme
+  veya `load_dataset` streaming gerekir; doğrulanmalı).
+
+### Koşullu sonuç (kullanıcının istediği netlik)
+- **Eğer** ölçülen boş alan **≥ ~430GB** → naif akış (ham+ara birlikte) bile sığar (dar marj,
+  §2 önlemleriyle).
+- **Eğer** boş alan **~430GB'ın ALTINDA** (Casper 512GB toplamda çok olası) → **naif v2b
+  İMKÂNSIZ.** İki seçenek kalır: **(a)** iki-geçişli akış (§7.3) ile tepeyi ~10-30GB'a indir
+  → v2b yine mümkün olabilir (ama snapshot-streaming doğrulaması + §2 güvenlik payı şart);
+  **(b)** v2b'den vazgeç, **yalnız v2a (~500k, ~42GB) gerçekçi** — ki zaten **laptop'a bile
+  sığıyor**, ev sunucusu depolama için bile şart değil.
+- **En dürüst özet:** v2b'nin bu sunucuda mümkünlüğü **ölçüme + streaming-indirme
+  doğrulamasına bağlı, şu an KANITLANMAMIŞ**. **v2a her hâlükârda gerçekçi ve güvenli**
+  (laptop-yerel). v2b'yi ancak `df -h` + `docker system df` + snapshot-streaming testi sonrası
+  taahhüt et. Şüphede kalınırsa **v2a ile başla** (v1 kuralı: v3'e/aşırıya sıçrama yok).
+
 **Sonraki: Faz 5 — yasal/lisans derinleştirme** (Mapillary ToS toplu indirme; CC-BY-SA
 türev-indeks/embedding ShareAlike viralliği; atıf yükümlülükleri). Onayınızı bekliyorum.
 
