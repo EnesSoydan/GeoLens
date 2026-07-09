@@ -24,12 +24,21 @@ Aşağıda her birinin recall etkisi ayrı ele alınır, sonra birleşik v2a/v2b
 
 ## 1. Boyut indirgeme (PCA) — SALAD'a özgü nüans
 
-**Genel VPR sezgisi yanıltıcı.** Literatürde iki karşıt bulgu var; ikisi de kaynaklı,
-ve fark **yöntemde**:
+**Genel VPR sezgisi yanıltıcı.** Kaynaklı bulgular:
 
-- **Hafif PCA ~kayıpsız (SALAD makalesi):** SALAD (Izquierdo & Civera, CVPR 2024,
-  arXiv:2311.15937) descriptor'u post-hoc **8192'ye** düşürmenin "anlamlı performans kaybı
-  olmadan" mümkün olduğunu belirtiyor. Yani 8448→8192 gibi *hafif* budama güvenli.
+- **DÜZELTME (kullanıcı yakaladı) — "8448→8192 hafif budama kayıpsız" İDDİASI KAYNAKSIZDI,
+  KALDIRILDI.** İlk taslakta bir web-özeti "SALAD post-hoc PCA→8192 anlamlı kayıpsız" diye
+  aktarmıştı; **SALAD makalesinde (arXiv:2311.15937) böyle bir PCA iddiası YOK.** Makalede
+  8192, VLAD kısmının *tasarım* boyutudur (64 küme × 128), 256 ise ayrı **global token**'dır:
+  `8448 = (64×128) + 256`. Yani "8192'ye budamak" = global token'ı yapısal olarak ATMAK
+  demektir — ve makalenin kendi bileşen ablasyonu (**Table 5, MSLS-val**) bunun kayıpsız
+  OLMADIĞINI gösteriyor:
+  - Tam SALAD: **R@1 92.2**
+  - Global token'sız: **R@1 91.8** (−0.4 puan)
+  - Dustbin'siz: **R@1 91.4** (−0.8 puan; "dustbin recall'da en etkili, sonra global token")
+  → Global token'ı çıkarmak **−0.4 R@1** maliyetli (belgelenmiş). Ayrıca "en düşük varyanslı
+  ~256 boyutu PCA ile atmak" *farklı* bir işlemdir (makale bunu test etmemiş) → **ÖLÇÜLECEK**,
+  varsayılmayacak. Bu, Faz 3'ün kendi kuralına ("ölçümsüz/kaynaksız sayı yayınlanmaz") uygun.
 - **Agresif WPCA recall'ı DÜŞÜRÜYOR (VLAD-BuFF, arXiv:2409.19293):** SALAD üzerinde
   **WPCA'nın recall'ı tutarlı biçimde düşürdüğü**, bunun düşük-boyutlu global descriptor'la
   verimli retrieval potansiyelini "belirgin biçimde kısıtladığı" raporlanıyor. Yani
@@ -81,7 +90,8 @@ kaynakları):
 | Konfig | Boyut kaybı | Nicemleme kaybı | Beklenen R@1 etkisi | Kaynak durumu |
 |---|---|---|---|---|
 | Flat 8448 (v1) | — | — | taban (cph+sf 91.9%) | ölçüldü (v1) |
-| PCA-8192 Flat | ~0 | — | ≈ taban | SALAD makalesi (hafif) |
+| Global token atma (→8192) | −0.4 R@1 | — | 92.2→91.8 | SALAD Table 5 (ablasyon) |
+| PCA→8192 (düşük-varyans at) | **?** | — | **ÖLÇ** | kaynaksız — makale test etmemiş |
 | PCA-1024 HNSW (v2a) | **?** (WPCA↓) | ~0 (HNSW exact-ish) | **ÖLÇ** | VLAD-BuFF: kayıp var, miktar ölçülecek |
 | PCA-512 IVFPQ m64 (v2b) | ? (daha agresif) | <%2 (iyi ayar) / %50 (kötü) | **ÖLÇ** | FAISS/Pinecone + ölçüm |
 | +OPQ | — | +2-6 puan geri kazanım | iyileştirir | FAISS/OPQ |
@@ -113,8 +123,10 @@ v1'deki `scripts/evaluate.py` (Recall@1/5/10 + medyan km-hata, 25m radius GT) v2
 
 ## 5. Faz 3 özeti (onay noktası)
 
-- **PCA SALAD'da bedava değil:** hafif budama (→8192) ~kayıpsız (makale); agresif WPCA
-  (→1024/512) recall'ı düşürür (VLAD-BuFF) — miktar **ölçülecek**, varsayılmayacak.
+- **PCA SALAD'da bedava değil:** "→8192 kayıpsız" iddiası **kaynaksızdı, kaldırıldı**
+  (kullanıcı yakaladı); makale Table 5 aksine global token atmanın **−0.4 R@1** maliyetli
+  olduğunu gösteriyor. Agresif WPCA (→1024/512) recall'ı düşürür (VLAD-BuFF) — miktar
+  **ölçülecek**, varsayılmayacak.
 - **PQ kaybı konfigürasyona bağlı:** iyi ayarda <%2 (Recall@5), kötü ayarda ~%50 çöküş;
   OPQ +2-6 puan geri kazandırır; nprobe hız/recall takası (demoda recall-öncelikli).
 - **v2a önerisi:** PCA-1024 + HNSW, kabul eşiği R@1 kaybı ≤2 puan.
@@ -129,7 +141,9 @@ sunucusunun rolü; HF Spaces free-tier limitleri). Onayınızı bekliyorum.
 
 ### Kaynaklar
 - Izquierdo & Civera, *Optimal Transport Aggregation for VPR* (SALAD), CVPR 2024,
-  arXiv:2311.15937 — post-hoc PCA→8192 kayıpsız notu.
+  arXiv:2311.15937 — **Table 5** bileşen ablasyonu: global token −0.4 R@1, dustbin −0.8
+  (8448 = 64×128 VLAD + 256 global token). NOT: makale PCA→8192 kayıpsızlık iddiası İÇERMEZ
+  (ilk taslaktaki o iddia kaynaksızdı, düzeltildi).
 - VLAD-BuFF, arXiv:2409.19293 — SALAD üzerinde WPCA'nın recall'ı tutarlı düşürmesi.
 - EffoVPR, arXiv:2405.18065 — 128-dim ile Tokyo24/7'de SALAD paritesi (kendi descriptor'u).
 - TLDR, arXiv:2110.09455 — DINO için öğrenilmiş boyut indirgeme (PCA alternatifi).
