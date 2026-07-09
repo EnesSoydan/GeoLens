@@ -125,6 +125,11 @@ kaynak seçimini de etkiler çünkü "5.1M görüntüyü indirsem bile tamamın�
    - *Neden:* v2a'da (5-10 seçili şehir) bir şehri güncel ve yoğun kaplamak istersen,
      o bbox'ları API ile tarayıp taze görüntü eklersin. OSV5M statik snapshot; canlı
      tazelik yalnız API'den gelir.
+   - *Uygulama notu (kullanıcı, Faz 1 onayı):* Ham REST + manuel bbox parçalama YERİNE
+     resmi **`mapillary-python-sdk`** kullan. Mapillary'nin kendi dokümantasyonu büyük
+     alan sorguları için bunu öneriyor; SDK 0.01°² bbox limitini (16 Oca 2026) dahili
+     sayfalama/parçalama ile soyutlar → limiti elle bölmekle uğraşmaktan kurtarır. v2
+     yoğunlaştırma script'i bu SDK üzerine yazılacak.
 
 3. **Coğrafi boşluk doldurma = KartaView (v3, opsiyonel).**
    - *Neden:* OSV5M/Mapillary'nin zayıf olduğu bölgelerde (SE Asya) tamamlayıcı. v2
