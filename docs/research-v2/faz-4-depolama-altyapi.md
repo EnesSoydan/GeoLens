@@ -180,18 +180,29 @@ hâli varsayar. Gerçekte **ikisi de gerekmez:**
   silinebilmesine bağlı (snapshot_download tam-set çekme eğiliminde → şard-seçici indirme
   veya `load_dataset` streaming gerekir; doğrulanmalı).
 
-### Koşullu sonuç (kullanıcının istediği netlik)
-- **Eğer** ölçülen boş alan **≥ ~430GB** → naif akış (ham+ara birlikte) bile sığar (dar marj,
-  §2 önlemleriyle).
-- **Eğer** boş alan **~430GB'ın ALTINDA** (Casper 512GB toplamda çok olası) → **naif v2b
-  İMKÂNSIZ.** İki seçenek kalır: **(a)** iki-geçişli akış (§7.3) ile tepeyi ~10-30GB'a indir
-  → v2b yine mümkün olabilir (ama snapshot-streaming doğrulaması + §2 güvenlik payı şart);
-  **(b)** v2b'den vazgeç, **yalnız v2a (~500k, ~42GB) gerçekçi** — ki zaten **laptop'a bile
-  sığıyor**, ev sunucusu depolama için bile şart değil.
-- **En dürüst özet:** v2b'nin bu sunucuda mümkünlüğü **ölçüme + streaming-indirme
-  doğrulamasına bağlı, şu an KANITLANMAMIŞ**. **v2a her hâlükârda gerçekçi ve güvenli**
-  (laptop-yerel). v2b'yi ancak `df -h` + `docker system df` + snapshot-streaming testi sonrası
-  taahhüt et. Şüphede kalınırsa **v2a ile başla** (v1 kuralı: v3'e/aşırıya sıçrama yok).
+### GERÇEK ÖLÇÜM (kullanıcı, sunucuda çalıştırıldı) — koşul çözüldü
+```
+df -h /   → /dev/mapper/ubuntu--vg-ubuntu--lv  466G toplam  8.6G kullanılmış  434G BOŞ  (%2)
+docker system df → Images 431MB, Containers ~1MB, Volumes ~34KB, Build Cache 244MB
+```
+- **Boş alan = 434GB.** Naif akış gereksinimi ~430GB → **yalnızca ~4GB marj.** Bu, Faz 4'ün
+  kendi belirlediği **50GB headroom eşiğinin çok altında** → pratikte **marjsız**.
+- **SONUÇ (kesin): naif v2b akışı (ham 259GB + ara 172GB birlikte) bu sunucuda GÜVENLİ DEĞİL.**
+  4GB marjda tek bir loglama/geçici dosya/Docker imaj çekme diski doldurur → §2 arıza modu
+  tetiklenir (servis container'ları da yazamaz). Naif yol **elendi.**
+
+### Kesin karar (gerçek ölçümle)
+- **İki-geçişli streaming (§7.3) v2b için ZORUNLU YOL** — artık opsiyonel değil. 172GB ara
+  embedding materyalize EDİLMEZ (embed→PCA-512→PQ-kodla→indekse ekle, ham float32 yazma);
+  259GB ham shard-shard indirilip aradan silinir → **gerçekçi tepe ~10-30GB** → 434GB boşa
+  rahat sığar, 50GB headroom korunur.
+- **Ön koşul (hâlâ doğrulanmalı):** OSV5M shard-seçici/streaming indirme (`load_dataset(...,
+  streaming=True)` veya `hf_hub_download` ile dosya-dosya) — `snapshot_download` tam-set
+  çekme eğiliminde; onunla 259GB bir kerede iner ve 434GB'ı 259+ara ile yine zorlar. Yani
+  **streaming-indirme çalışmazsa v2b yine riskli** → o durumda **v2a'ya düş.**
+- **v2a (~500k, ~42GB) her hâlükârda güvenli** ve laptop'a bile sığıyor; şüphede v2a ile
+  başla (v1 kuralı: aşırıya/v3'e sıçrama yok). **v2b'ye yalnız streaming-indirme + §2
+  güvenlik payı doğrulandıktan sonra geç.**
 
 **Sonraki: Faz 5 — yasal/lisans derinleştirme** (Mapillary ToS toplu indirme; CC-BY-SA
 türev-indeks/embedding ShareAlike viralliği; atıf yükümlülükleri). Onayınızı bekliyorum.
