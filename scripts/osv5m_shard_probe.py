@@ -17,6 +17,7 @@ Prints a compact report only.
 
 from __future__ import annotations
 
+import argparse
 import io
 import struct
 
@@ -24,7 +25,9 @@ import pandas as pd
 import requests
 
 CSV_URL = "https://huggingface.co/datasets/osv5m/osv5m/resolve/main/train.csv"
-SHARD_URL = "https://huggingface.co/datasets/osv5m/osv5m/resolve/main/images/train/00.zip"
+SHARD_URL_TMPL = (
+    "https://huggingface.co/datasets/osv5m/osv5m/resolve/main/images/train/{shard}.zip"
+)
 FIRST_BLOCK_ROWS = 50_001  # one shard's worth of rows
 FIRST_BLOCK_BYTES = 45_000_000  # ~45 MB, enough to cover 50k rows
 TRAIN_TOTAL = 4_894_685
@@ -46,20 +49,20 @@ def _content_length(url: str) -> int:
     return int(r.headers["Content-Length"])
 
 
-def _shard_ids() -> set[str]:
+def _shard_ids(shard_url: str) -> set[str]:
     """Read the zip central directory over HTTP Range (no 2.5 GB download).
 
     The shard is a <4 GB, <65535-entry zip, so the classic End-Of-Central-Directory
     record (no zip64) applies: read the tail to find the EOCD, then range-read the
     central directory and parse each file header's name.
     """
-    size = _content_length(SHARD_URL)
-    tail = _range(SHARD_URL, max(0, size - 65_557), size - 1)
+    size = _content_length(shard_url)
+    tail = _range(shard_url, max(0, size - 65_557), size - 1)
     eocd = tail.rfind(b"PK\x05\x06")
     if eocd < 0:
         raise RuntimeError("EOCD imzasi bulunamadi")
     cd_size, cd_offset = struct.unpack_from("<II", tail, eocd + 12)
-    cd = _range(SHARD_URL, cd_offset, cd_offset + cd_size - 1)
+    cd = _range(shard_url, cd_offset, cd_offset + cd_size - 1)
 
     ids: set[str] = set()
     pos = 0
@@ -90,10 +93,20 @@ def _first_block() -> pd.DataFrame:
 
 
 def main() -> int:
-    """Measure shard-00 id overlap with the first CSV block and print a verdict."""
-    print("[zip] shard-00 id listesi (merkezi dizin, indirmesiz) okunuyor...")
-    sids = _shard_ids()
-    print(f"[zip] shard-00 goruntu sayisi: {len(sids)}")
+    """Measure a shard's id overlap with the first CSV block and print a verdict."""
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--shard",
+        default="00",
+        help="shard number, zero-padded 2 digits (e.g. 00, 49, 97)",
+    )
+    args = parser.parse_args()
+    shard = args.shard
+    shard_url = SHARD_URL_TMPL.format(shard=shard)
+
+    print(f"[zip] shard-{shard} id listesi (merkezi dizin, indirmesiz) okunuyor...")
+    sids = _shard_ids(shard_url)
+    print(f"[zip] shard-{shard} goruntu sayisi: {len(sids)}")
 
     print("[csv] ilk ~50k satir (Range ~45MB) okunuyor...")
     df = _first_block()
@@ -103,7 +116,7 @@ def main() -> int:
     inter = sids & block_ids
     overlap = len(inter) / len(sids) if sids else 0.0
     base_rate = FIRST_BLOCK_ROWS / TRAIN_TOTAL
-    print(f"[test] shard-00 kesisim ilk-blok: {len(inter)} ({overlap:.1%})")
+    print(f"[test] shard-{shard} kesisim ilk-blok: {len(inter)} ({overlap:.1%})")
     print(f"[test] uniform taban orani: {base_rate:.1%}")
     if overlap > 0.5:
         verdict = "KUMELI (shard ~= CSV blogu; ilk N shard cografi yanli)"
