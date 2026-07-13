@@ -95,6 +95,7 @@ module = [
     "folium.*",
     "pytorch_grad_cam.*",
     "torchvision.*",
+    "pandas.*",
 ]
 ignore_missing_imports = true
 
