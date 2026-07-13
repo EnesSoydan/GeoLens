@@ -25,6 +25,9 @@ htmlcov/
 data/raw/
 data/processed/
 data/index/
+data/osv5m_tmp/
+data/osv5m_v2a/
+data/osv5m_v2a_smoke/
 models/weights/
 !**/.gitkeep
 
